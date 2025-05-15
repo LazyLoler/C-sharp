@@ -1,0 +1,185 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace BlackJack
+{
+    class Program
+    {
+        // Instance-level field to store the deck
+        List<string> deck;
+
+        // Constructor to initialize the deck
+        public Program()
+        {
+            deck = GenerateDeck();
+        }
+
+        // Method to generate a deck of cards
+        List<string> GenerateDeck()
+        {
+            List<string> deck = new List<string>();  // Initialize deck
+
+            string[] ranks = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
+            string[] suits = { "Hearts", "Diamonds", "Clubs", "Spades" };  //A dd suits for a complete deck
+
+            // Generate a deck with 52 cards (13 ranks *4 suits)
+            foreach (var suit in suits)
+            {
+                foreach (var rank in ranks)
+                {
+                    deck.Add(rank + " of " + suit);
+                }
+            }
+
+            return deck;  // Return the populated deck
+        }
+
+        // Method to draw a card from the deck
+        private static string DrawCard(ref List<string> deck)
+        {
+            string card = deck.First();
+            deck.RemoveAt(0);  // Remove the card from the deck
+            return card;
+        }
+
+        static void Main(string[] args)
+        {
+            Random random = new Random();
+            bool playAgain = true;
+
+            Program program = new Program();  // Create an instance of the Program class
+
+            while (playAgain) // Runs the game until the player decides to stop
+            {
+                List<string> deck = program.deck;  // Access the deck from the Program instance
+                deck = deck.OrderBy(card => random.Next()).ToList();  // Shuffle the deck randomly
+
+                List<string> playerHand = new List<string>();
+                List<string> dealerHand = new List<string>();
+
+                // Deal initial cards to player and dealer
+                playerHand.Add(DrawCard(ref deck));
+                playerHand.Add(DrawCard(ref deck));
+                dealerHand.Add(DrawCard(ref deck));
+                dealerHand.Add(DrawCard(ref deck));
+
+                bool playerBusted = false;
+                bool dealerBusted = false;
+
+                while(true)
+                {
+                    
+                    Console.Clear();
+                    Console.WriteLine("-->BLACK JACK<--");
+                    Console.WriteLine("Dealers hand: [ " + dealerHand[1] + "]");
+                    Console.WriteLine("Your hand: " + string.Join(", ", playerHand));
+                    Console.WriteLine("Your total: " + CalculateHandValue(playerHand));
+                    Console.WriteLine("Hit (H) or Stand (S)");
+
+                    string choice = Console.ReadLine();
+                    if (choice == "H" || choice == "h")
+                    {
+                        playerHand.Add(DrawCard(ref deck));
+
+                        if(CalculateHandValue(playerHand)>21)
+                        {
+                            Console.WriteLine("You busted! You total hand value was: " + CalculateHandValue(playerHand));
+                            playerBusted = true;
+                            return;
+                        }
+                    }
+
+                    else if(choice == "S" || choice == "s")
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid input try H or S!");
+                        Console.ReadKey();
+                    }
+
+                    if (!playerBusted)
+                    {
+                        while (CalculateHandValue(dealerHand) < 17)
+                        {
+                            dealerHand.Add(DrawCard(ref deck));
+                        }
+
+                        if (CalculateHandValue(dealerHand) > 21)
+                        {
+                            dealerBusted = true;
+                        }
+                    }
+                }
+                Console.Clear();
+                Console.WriteLine("=== Final Results ===");
+                Console.WriteLine("Dealer's hand: " + string.Join(", ", dealerHand) + " (Total: " + CalculateHandValue(dealerHand) + ")");
+                Console.WriteLine("Your hand: " + string.Join(", ", playerHand) + " (Total: " + CalculateHandValue(playerHand) + ")");
+                // Assigns the player and dealer hand to total variables
+                int playerTotal = CalculateHandValue(playerHand);
+                int dealerTotal = CalculateHandValue(dealerHand);   
+
+                if(playerBusted)
+                {
+                    Console.WriteLine("You busted! Dealer wins.");
+                }
+                else if(dealerBusted)
+                {
+                    Console.WriteLine("Dealer busted! You win!");
+                }
+
+                else if(playerTotal<dealerTotal)
+                {
+                    Console.WriteLine("You busted! Dealer wins.");
+                }
+
+                else if(playerTotal>dealerTotal)
+                {
+                    Console.WriteLine("You win! Dealer busted.");
+                }
+
+                else
+                {
+                    Console.WriteLine("It's a tie");
+                }
+            }
+            Console.WriteLine("Thanks for playing!");
+        }
+        // This makes CalculateHandValue(playerHand) work
+        private static int CalculateHandValue(List<string> playerHand)
+        {
+            int totalValue = 0;
+            int aceCount = 0;
+
+            foreach (var card in playerHand)
+            {
+                string rank = card.Split(' ')[0];  // Extract the rank (e.g., "A", "10", "J", etc.)
+
+                // Add value for face cards
+                if (rank == "J" || rank == "Q" || rank == "K")
+                {
+                    totalValue += 10;
+                }
+                else if (rank == "A")
+                {
+                    totalValue += 11;
+                    aceCount++;  // Track how many aces are in the hand
+                }
+                else
+                {
+                    totalValue += int.Parse(rank);  // Add the numeric value of the card (2-10)
+                }
+            }
+
+            // Adjust for Aces if the total value exceeds 21
+            while (totalValue > 21 && aceCount > 0)
+            {
+                totalValue -= 10;  // Convert an Ace from 11 to 1 if necessary
+                aceCount--;
+            }
+            return totalValue;
+        }
+    }
+}
